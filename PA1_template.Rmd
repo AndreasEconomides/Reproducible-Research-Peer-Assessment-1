@@ -1,0 +1,94 @@
+---
+title: "Reproducible Research: Peer Assessment 1"
+output: 
+  html_document:
+    keep_md: true
+---
+
+```{r}
+library (plyr)
+library (lattice)
+```
+
+## Loading and preprocessing the data
+
+
+```{r}
+activity <- read.csv("activity.csv")
+
+```
+
+
+## What is mean total number of steps taken per day?
+
+```{r}
+stepsperday <- aggregate(steps ~ date, data=activity, FUN=sum)
+barplot(stepsperday$steps, names.arg=stepsperday$date, xlab="date", ylab="steps", col = "orange")
+```
+
+
+```{r}
+mean(stepsperday$steps)
+median(stepsperday$steps)
+```
+
+## What is the average daily activity pattern?
+
+
+```{r}
+stepsperinterval <- aggregate(steps ~ interval, data=activity, FUN=mean)
+plot(stepsperinterval, type="l", col = "red")
+```
+
+
+```{r}
+stepsperinterval$interval[which.max(stepsperinterval$steps)]
+```
+
+
+## Imputing missing values
+
+```{r}
+sum(is.na(activity))
+```
+
+
+```{r}
+activity <- merge(activity, stepsperinterval, by="interval", suffixes=c("",".y"))
+nas <- is.na(activity$steps)
+activity$steps[nas] <- activity$steps.y[nas]
+activity <- activity[,c(1:3)]
+```
+
+```{r}
+stepsperdate <- aggregate(steps ~ date, data=activity, FUN=sum)
+barplot(stepsperdate$steps, names.arg=stepsperdate$date, xlab="date", ylab="steps", col = "green")
+mean(stepsperdate$steps)
+median(stepsperdate$steps)
+```
+
+## Are there differences in activity patterns between weekdays and weekends?
+
+
+```{r, cache=TRUE}
+daytype <- function(date) {
+    if (weekdays(as.Date(date)) %in% c("Saturday", "Sunday")) {
+        "weekend"
+    } else {
+        "weekday"
+    }
+}
+activity$daytype <- as.factor(sapply(activity$date, daytype))
+```
+
+
+```{r}
+par(mfrow=c(2,1))
+for (type in c("weekend", "weekday")) {
+    stepspertype <- aggregate(steps ~ interval,
+                            data=activity,
+                            subset=activity$daytype==type,
+                            FUN=mean)
+    plot(stepspertype, type="l", main=type, col = "blue")
+}
+```
